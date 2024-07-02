@@ -53,7 +53,6 @@ public class ShipmentWorkflowImpl implements ShipmentWorkflow {
         }
 
         // https://github.com/temporalio/reference-app-orders-go/blob/3fa995740d2f9ad31890c0ca093bc40524250a19/app/shipment/workflows.go#L161
-        // Rob I think this can never fail, can you confirm it
         localActivityStub.updateShipmentStatus(
                 new ShipmentStatusUpdate(this.shipment.getId(), this.shipment.getStatus()));
 
