@@ -100,7 +100,7 @@ public class ShipmentWorkflowImpl implements ShipmentWorkflow {
     }
 
     @Override
-    public void shipmentStatusDelivered(ShipmentCarrierUpdateSignal signal) {
+    public void handleCarrierUpdate(ShipmentCarrierUpdateSignal signal) {
 
         // https://github.com/temporalio/reference-app-orders-go/blob/3fa995740d2f9ad31890c0ca093bc40524250a19/app/shipment/workflows.go#L139
         this.shipment.updateStatus(signal.status());

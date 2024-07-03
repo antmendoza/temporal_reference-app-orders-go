@@ -15,5 +15,5 @@ interface ShipmentWorkflow {
     ShipmentStatus statusQuery();
 
     @SignalMethod
-    void shipmentStatusDelivered(ShipmentCarrierUpdateSignal signal);
+    void handleCarrierUpdate(ShipmentCarrierUpdateSignal signal);
 }
