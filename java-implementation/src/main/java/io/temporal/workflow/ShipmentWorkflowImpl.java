@@ -83,9 +83,9 @@ public class ShipmentWorkflowImpl implements ShipmentWorkflow {
         // https://github.com/temporalio/reference-app-orders-go/blob/3fa995740d2f9ad31890c0ca093bc40524250a19/app/shipment/workflows.go#L91
         return new ShipmentStatus(this.shipment);
 
-        // Rob Why this struct does not have items
+        // Rob in case I am missing something... Why this struct does not have items
         // https://github.com/temporalio/reference-app-orders-go/blob/3fa995740d2f9ad31890c0ca093bc40524250a19/app/shipment/workflows.go#L60
-        // and here you have to get them from the input
+        // and here we get them from the input
         // https://github.com/temporalio/reference-app-orders-go/blob/3fa995740d2f9ad31890c0ca093bc40524250a19/app/shipment/workflows.go#L95
 
     }
