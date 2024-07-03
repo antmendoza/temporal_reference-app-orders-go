@@ -1,4 +1,4 @@
-package io.temporal.workflow;
+package io.temporal.other;
 
 import io.temporal.activity.ActivityInterface;
 import io.temporal.activity.ActivityMethod;
@@ -8,6 +8,7 @@ import io.temporal.client.WorkflowOptions;
 import io.temporal.serviceclient.WorkflowServiceStubs;
 import io.temporal.worker.Worker;
 import io.temporal.worker.WorkerFactory;
+import io.temporal.workflow.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,12 +26,46 @@ public class HelloParallelExecution {
     static final String WORKFLOW_ID = "HelloActivityWorkflow";
 
 
+
+    public static void main(String[] args) {
+
+        WorkflowServiceStubs service = WorkflowServiceStubs.newLocalServiceStubs();
+
+        WorkflowClient client = WorkflowClient.newInstance(service);
+
+        WorkerFactory factory = WorkerFactory.newInstance(client);
+
+        Worker worker = factory.newWorker(TASK_QUEUE);
+
+
+        worker.registerWorkflowImplementationTypes(GreetingWorkflowImpl.class);
+
+
+        worker.registerActivitiesImplementations(new GreetingWorkflowImpl.GreetingActivitiesImpl());
+
+        factory.start();
+
+        GreetingWorkflow workflow =
+                client.newWorkflowStub(
+                        GreetingWorkflow.class,
+                        WorkflowOptions.newBuilder()
+                                .setWorkflowId(WORKFLOW_ID)
+                                .setTaskQueue(TASK_QUEUE)
+                                .build());
+
+
+        List<String> greeting = workflow.run("World");
+
+        // Display workflow execution results
+        System.out.println(greeting);
+        System.exit(0);
+    }
     @WorkflowInterface
     public interface GreetingWorkflow {
 
 
         @WorkflowMethod
-        List<String> getGreeting(String name);
+        List<String> run(String name);
     }
 
 
@@ -55,42 +90,8 @@ public class HelloParallelExecution {
                                 .build());
 
 
-        public static void main(String[] args) {
-
-            WorkflowServiceStubs service = WorkflowServiceStubs.newLocalServiceStubs();
-
-            WorkflowClient client = WorkflowClient.newInstance(service);
-
-            WorkerFactory factory = WorkerFactory.newInstance(client);
-
-            Worker worker = factory.newWorker(TASK_QUEUE);
-
-
-            worker.registerWorkflowImplementationTypes(GreetingWorkflowImpl.class);
-
-
-            worker.registerActivitiesImplementations(new GreetingActivitiesImpl());
-
-            factory.start();
-
-            GreetingWorkflow workflow =
-                    client.newWorkflowStub(
-                            GreetingWorkflow.class,
-                            WorkflowOptions.newBuilder()
-                                    .setWorkflowId(WORKFLOW_ID)
-                                    .setTaskQueue(TASK_QUEUE)
-                                    .build());
-
-
-            List<String> greeting = workflow.getGreeting("World");
-
-            // Display workflow execution results
-            System.out.println(greeting);
-            System.exit(0);
-        }
-
         @Override
-        public List<String> getGreeting(String name) {
+        public List<String> run(String name) {
 
 
             final List<Fulfillment> fulfillments = IntStream.rangeClosed(0, 10)
