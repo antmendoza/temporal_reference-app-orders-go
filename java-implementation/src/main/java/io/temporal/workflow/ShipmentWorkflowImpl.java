@@ -60,6 +60,11 @@ public class ShipmentWorkflowImpl implements ShipmentWorkflow {
         // Rob this is just a signal handler right?
         // See method shipmentStatusDelivered
 
+
+        // https://github.com/temporalio/reference-app-orders-go/blob/3fa995740d2f9ad31890c0ca093bc40524250a19/app/shipment/workflows.go#L134
+        Workflow.await(() -> this.shipment.getStatus() == Status.Completed);
+        //Workflow.await is an overloaded method that accepts a timer too
+
         return new ShipmentResult(bookShipmentResult.courierReference());
     }
 
