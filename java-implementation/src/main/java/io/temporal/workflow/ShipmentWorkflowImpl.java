@@ -75,14 +75,14 @@ public class ShipmentWorkflowImpl implements ShipmentWorkflow {
         final String ShipmentStatusUpdatedSignalName = "ShipmentStatusUpdated";
 
         // https://github.com/temporalio/reference-app-orders-go/blob/3fa995740d2f9ad31890c0ca093bc40524250a19/app/shipment/workflows.go#L165
-        Workflow.newUntypedChildWorkflowStub(this.shipment.getRequestorWID())
+        Workflow.newUntypedExternalWorkflowStub(this.shipment.getRequestorWID())
                 .signal(
                         ShipmentStatusUpdatedSignalName,
                         new ShipmentStatusUpdatedSignal(
                                 this.shipment.getId(), this.shipment.getStatus(), this.shipment.getUpdatedAt()));
 
 
-        //If we have the interface we could have created a (Typed)"ChildWorkflow" instead and invoke their signal method.
+        //If we have the interface we could have created a (Typed)"ExternalWorkflowStub" instead and invoke their signal method.
 
     }
 
