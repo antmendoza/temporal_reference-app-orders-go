@@ -5,6 +5,9 @@ import io.temporal.activity.ActivityMethod;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowOptions;
+import io.temporal.failure.ActivityFailure;
+import io.temporal.failure.ApplicationFailure;
+import io.temporal.failure.TemporalFailure;
 import io.temporal.serviceclient.WorkflowServiceStubs;
 import io.temporal.worker.Worker;
 import io.temporal.worker.WorkerFactory;
@@ -16,7 +19,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class HelloParallelExecution {
@@ -24,7 +26,7 @@ public class HelloParallelExecution {
     static final String TASK_QUEUE = "HelloActivityTaskQueue";
 
     static final String WORKFLOW_ID = "HelloActivityWorkflow";
-
+    private static final String Error_PaymentFulfillment = "Error_PaymentFulfillment";
 
 
     public static void main(String[] args) {
@@ -60,6 +62,7 @@ public class HelloParallelExecution {
         System.out.println(greeting);
         System.exit(0);
     }
+
     @WorkflowInterface
     public interface GreetingWorkflow {
 
@@ -80,6 +83,7 @@ public class HelloParallelExecution {
     }
 
     public static class GreetingWorkflowImpl implements GreetingWorkflow {
+        private static final Logger log = LoggerFactory.getLogger(GreetingWorkflowImpl.class);
 
 
         private final GreetingActivities activities =
@@ -103,18 +107,42 @@ public class HelloParallelExecution {
                 promises.add(Async.function(this::process, fulfillment));
             }
 
-            //Wait for all to complete
-            Promise.allOf(promises).get();
 
-            List<String> processedItems = promises.stream().map(p -> p.get()).collect(Collectors.toList());
+            List<String> processedItems = new ArrayList<>();
+
+            try {
+                //Wait for all to complete or one of them to fail
+                Promise.allOf(promises).get();
+
+            } catch (TemporalFailure e) {
+                for (Promise<String> promise : promises) {
+                    final RuntimeException failure = promise.getFailure();
+                    if (failure != null) {
+                        //parallel executions failed, do something...
+                        log.error("Error >> : " + failure);
+                        if (failure instanceof ActivityFailure) {
+
+                            final ApplicationFailure applicationFailureCause = (ApplicationFailure) failure.getCause();
+                            if (applicationFailureCause.getType().equals(Error_PaymentFulfillment)) {
+                                //TODO Compensate payment...
+                                Fulfillment failedFulfillment = applicationFailureCause.getDetails().get(0, Fulfillment.class);
+                                log.error("Compensating payment for failed: " + failedFulfillment);
+
+                            }
+                        }
+
+
+                    } else {
+                        processedItems.add(promise.get());
+                    }
+                }
+
+            }
 
 
             return processedItems;
         }
 
-        private void activity2() {
-            System.out.println("activity2");
-        }
 
         private String process(Fulfillment fulfillment) {
 
@@ -136,9 +164,9 @@ public class HelloParallelExecution {
 
             private void sleepRandomDuration() {
                 // Sleep random duration
-                int randomSleep = new Random().nextInt(100)*50;
+                int randomSleep = new Random().nextInt(100) * 50;
                 //Simulate some work
-                log.info("About to sleep..." +randomSleep/1000 );
+                log.info("About to sleep..." + randomSleep / 1000);
 
                 try {
                     Thread.sleep(randomSleep);
@@ -149,6 +177,13 @@ public class HelloParallelExecution {
 
             @Override
             public String processShipment(final Fulfillment fulfillment) {
+
+                if (fulfillment.equals(new Fulfillment(3))) {
+                    throw ApplicationFailure
+                            .newNonRetryableFailure("Error processing Fulfillment",
+                                    Error_PaymentFulfillment, fulfillment);
+                }
+
                 log.info("executing processShipment...");
                 sleepRandomDuration();
                 return fulfillment.toString();
